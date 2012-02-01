@@ -1,0 +1,180 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<title>Locale</title>
+	<link media="only screen and (max-device-width: 960px)" href="ios.css" type= "text/css" rel="stylesheet">
+	<link media="only screen and (min-device-width: 768px)" href="ios2.css" type= "text/css" rel="stylesheet">
+	<link media="screen and (min-device-width: 961px)" href="desktop.css" type="text/css" rel="stylesheet">
+	<link rel="icon" type="image/png" href="images/favicon.png">
+	<link rel="apple-touch-icon-precomposed" type="image/png" href="images/apple-touch-icon.png">
+<!--	<link rel="apple-touch-startup-image" type="image/png" href="images/startup.png">-->
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black" />
+	<script type="text/javascript">
+	function flip (event)
+	{
+		var element = event.currentTarget;
+		/* Toggle the setting of the classname attribute */
+		element.className = (element.className == 'card') ? 'card flipped' : 'card';
+	}
+	</script>
+	<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+	<script type="text/javascript">
+	var geocoder;
+	var initialLocation;
+	var watchId = navigator.geolocation.watchPosition(scrollMap);
+	var siberia = new google.maps.LatLng(60, 105);
+	var newyork = new google.maps.LatLng(40.69847032728747, -73.9514422416687);
+	var browserSupportFlag =  new Boolean();
+	var map;
+	var infowindow = new google.maps.InfoWindow();
+	var latitude,longitude,lat,lng;
+	  
+	function initialize() {
+	geocoder = new google.maps.Geocoder();
+	  var myOptions = {
+	    zoom: 13,
+	    mapTypeControl: false,
+	    mapTypeId: google.maps.MapTypeId.ROADMAP
+	  };
+	  map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+	  
+	  // Try W3C Geolocation method (Preferred)
+	  if(navigator.geolocation) {
+	    browserSupportFlag = true;
+	    navigator.geolocation.getCurrentPosition(function(position) {
+	      latitude = position.coords.latitude;
+	      longitude = position.coords.longitude;
+	      initialLocation = new google.maps.LatLng(position.coords.latitude,position.coords.longitude);
+	      contentString = "Current Location";
+	      map.setCenter(initialLocation);
+	      infowindow.setContent(contentString);
+	      infowindow.setPosition(initialLocation);
+	      //infowindow.open(map);
+	      var marker = new google.maps.Marker({
+	            position: initialLocation,
+	            map: map,
+	            clickable: false
+	        });
+	      var diamondCoords = [
+	          new google.maps.LatLng(latitude+(2/111), longitude),
+	          new google.maps.LatLng(latitude, longitude-(2/111)),
+	          new google.maps.LatLng(latitude-(2/111), longitude),
+	          new google.maps.LatLng(latitude, longitude+(2/111))
+	        ];
+	      
+	        // Construct the polygon
+	        // Note that we don't specify an array or arrays, but instead just
+	        // a simple array of LatLngs in the paths property
+	        diamond = new google.maps.Polygon({
+	          paths: diamondCoords,
+	          clickable: false,
+	          strokeColor: "#0000FF",
+	          strokeOpacity: 0.8,
+	          strokeWeight: 2,
+	          fillColor: "#0000FF",
+	          fillOpacity: 0.35
+	        });
+	      
+	        diamond.setMap(map);
+	    }, function() {
+	      handleNoGeolocation(browserSupportFlag);
+	    });
+	  } else {
+	    // Browser doesn't support Geolocation
+	    browserSupportFlag = false;
+	    handleNoGeolocation(browserSupportFlag);
+	  }
+	}
+	
+	function handleNoGeolocation(errorFlag) {
+	  if (errorFlag == true) {
+	    initialLocation = newyork;
+	    contentString = "Error: The Geolocation service failed.";
+	  } else {
+	    initialLocation = siberia;
+	    contentString = "Error: Your browser doesn't support geolocation. Are you in Siberia?";
+	  }
+	  map.setCenter(initialLocation);
+	  infowindow.setContent(contentString);
+	  infowindow.setPosition(initialLocation);
+	  infowindow.open(map);
+	}
+	
+	function codeAddress() {
+	var address = document.getElementById("address").value;
+	geocoder.geocode( { 'address': address}, function(results, status) {
+	  if (status == google.maps.GeocoderStatus.OK) {
+	    map.setCenter(results[0].geometry.location);
+	    var marker = new google.maps.Marker({
+	        map: map, 
+	        position: results[0].geometry.location
+	    });
+	    lat = results[0].geometry.location.lat();
+	    lng = results[0].geometry.location.lng();
+	    alert('Current Latitude: '+latitude+'\nCurrent Longitude: '+longitude+'\nNew Location Latitude: '+lat+'\nNew Location Longitude: '+lng);
+		distance(latitude,lat,longitude,lng);
+	  } else {
+	    alert("Geocode was not successful for the following reason: " + status);
+	  }
+	});
+	}
+	
+	function distance(lat1,lat2,lon1,lon2) {
+		var R = 6371; // km
+		var dLat = toRad(lat2-lat1);
+		var dLon = toRad(lon2-lon1); 
+		var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+		        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * 
+		        Math.sin(dLon/2) * Math.sin(dLon/2); 
+		var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+		var d = R * c;
+		alert('These two locations are: '+d+' km apart.');
+	}
+	
+	function toRad(deg) {
+		return deg*Math.PI/180;
+	}
+	
+	function flip() {
+		var card = document.getElementById('card');
+		var theTransform = window.getComputedStyle(card).webkitTransform;
+		var matrix = new WebKitCSSMatrix(theTransform);
+		card.style.webkitTransform = matrix.rotate(0,180,0);
+	}
+	
+	function scrollMap(position) {
+		map.setCenter(watchId);
+	}
+	function showGlow() {
+		document.getElementById('info').style.border="medium solid white";
+	}
+	function hideGlow() {
+		document.getElementById('info').style.border="none";
+	}
+	</script>
+</head>
+<body onload="initialize()">
+	<div id="container">
+		<div id="card" class="card">
+			<div id="front" class="front face">
+				<div id="name"><h1>Locale</h1></div>
+				<div id="map_canvas"></div>
+				<div id="info" onclick="flip()"><i>i</i></div>
+				<div id="credit"><h3><br>Alykhan Kanji</h3></div>
+			</div>
+			<div id="back" class="back face">
+				<div id="name"><h1>Locale</h1></div>
+				<div id="settings">
+					<input id="address" type="textbox">
+					<input type="button" value="Find" onclick="codeAddress();flip();">
+				</div>
+				<div id="info" onclick="flip(event)"><i>i</i></div>
+				<div id="credit"><h3><br>Alykhan Kanji</h3></div>
+			</div>
+		</div>
+	</div>
+</body>
+<!--<div id="footer">Icons by Joseph Wain (<a href="http://glyphish.com">glyphish.com</a>). Work licensed under CC Attribution 3.0 US License.</div>-->
+</html>
